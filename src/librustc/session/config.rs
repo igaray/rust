@@ -1828,7 +1828,7 @@ pub fn rustc_optgroups() -> Vec<RustcOptGroup> {
 
 // Convert strings provided as --cfg [cfgspec] into a crate_cfg
 pub fn parse_cfgspecs(cfgspecs: Vec<String>) -> FxHashSet<(String, Option<String>)> {
-    syntax::with_globals(move || {
+    syntax::with_default_globals(move || {
         let cfg = cfgspecs.into_iter().map(|s| {
             let sess = parse::ParseSess::new(FilePathMapping::empty());
             let filename = FileName::cfg_spec_source_code(&s);
@@ -2657,7 +2657,7 @@ mod tests {
     // When the user supplies --test we should implicitly supply --cfg test
     #[test]
     fn test_switch_implies_cfg_test() {
-        syntax::with_globals(|| {
+        syntax::with_default_globals(|| {
             let matches = &match optgroups().parse(&["--test".to_string()]) {
                 Ok(m) => m,
                 Err(f) => panic!("test_switch_implies_cfg_test: {}", f),
@@ -2674,7 +2674,7 @@ mod tests {
     // another --cfg test
     #[test]
     fn test_switch_implies_cfg_test_unless_cfg_test() {
-        syntax::with_globals(|| {
+        syntax::with_default_globals(|| {
             let matches = &match optgroups().parse(&["--test".to_string(),
                                                      "--cfg=test".to_string()]) {
                 Ok(m) => m,
@@ -2692,7 +2692,7 @@ mod tests {
 
     #[test]
     fn test_can_print_warnings() {
-        syntax::with_globals(|| {
+        syntax::with_default_globals(|| {
             let matches = optgroups().parse(&["-Awarnings".to_string()]).unwrap();
             let registry = errors::registry::Registry::new(&[]);
             let (sessopts, _) = build_session_options_and_crate_config(&matches);
@@ -2700,7 +2700,7 @@ mod tests {
             assert!(!sess.diagnostic().flags.can_emit_warnings);
         });
 
-        syntax::with_globals(|| {
+        syntax::with_default_globals(|| {
             let matches = optgroups()
                 .parse(&["-Awarnings".to_string(), "-Dwarnings".to_string()])
                 .unwrap();
@@ -2710,7 +2710,7 @@ mod tests {
             assert!(sess.diagnostic().flags.can_emit_warnings);
         });
 
-        syntax::with_globals(|| {
+        syntax::with_default_globals(|| {
             let matches = optgroups().parse(&["-Adead_code".to_string()]).unwrap();
             let registry = errors::registry::Registry::new(&[]);
             let (sessopts, _) = build_session_options_and_crate_config(&matches);

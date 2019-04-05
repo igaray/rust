@@ -8,6 +8,7 @@ use rustc::session::config::{OutputType, OutputTypes, Externs, CodegenOptions};
 use rustc::session::search_paths::SearchPath;
 use rustc::util::common::ErrorReported;
 use syntax::ast;
+use syntax::with_globals;
 use syntax::source_map::SourceMap;
 use syntax::edition::Edition;
 use syntax::feature_gate::UnstableFeatures;
@@ -168,7 +169,7 @@ fn run_test(test: &str, cratename: &str, filename: &FileName, line: usize,
             persist_doctests: Option<PathBuf>) {
     // The test harness wants its own `main` and top-level functions, so
     // never wrap the test in `fn main() { ... }`.
-    let (test, line_offset) = make_test(test, Some(cratename), as_test_harness, opts);
+    let (test, line_offset) = make_test(test, Some(cratename), as_test_harness, opts, edition);
     // FIXME(#44940): if doctests ever support path remapping, then this filename
     // needs to be the result of `SourceMap::span_to_unmapped_path`.
     let path = match filename {
@@ -341,7 +342,8 @@ fn run_test(test: &str, cratename: &str, filename: &FileName, line: usize,
 pub fn make_test(s: &str,
                  cratename: Option<&str>,
                  dont_insert_main: bool,
-                 opts: &TestOptions)
+                 opts: &TestOptions,
+                 edition: Edition)
                  -> (String, usize) {
     let (crate_attrs, everything_else, crates) = partition_source(s);
     let everything_else = everything_else.trim();
@@ -370,7 +372,7 @@ pub fn make_test(s: &str,
 
     // Uses libsyntax to parse the doctest and find if there's a main fn and the extern
     // crate already is included.
-    let (already_has_main, already_has_extern_crate, found_macro) = crate::syntax::with_globals(|| {
+    let (already_has_main, already_has_extern_crate, found_macro) = with_globals(edition, || {
         use crate::syntax::{parse::{self, ParseSess}, source_map::FilePathMapping};
         use errors::emitter::EmitterWriter;
         use errors::Handler;
@@ -869,6 +871,7 @@ impl<'a, 'hir> intravisit::Visitor<'hir> for HirCollector<'a, 'hir> {
 #[cfg(test)]
 mod tests {
     use super::{TestOptions, make_test};
+    use syntax::edition::DEFAULT_EDITION;
 
     #[test]
     fn make_test_basic() {
@@ -881,7 +884,7 @@ mod tests {
 fn main() {
 assert_eq!(2+2, 4);
 }".to_string();
-        let output = make_test(input, None, false, &opts);
+        let output = make_test(input, None, false, &opts, DEFAULT_EDITION);
         assert_eq!(output, (expected, 2));
     }
 
@@ -897,7 +900,7 @@ assert_eq!(2+2, 4);
 fn main() {
 assert_eq!(2+2, 4);
 }".to_string();
-        let output = make_test(input, Some("asdf"), false, &opts);
+        let output = make_test(input, Some("asdf"), false, &opts, DEFAULT_EDITION);
         assert_eq!(output, (expected, 2));
     }
 
@@ -916,7 +919,7 @@ fn main() {
 use asdf::qwop;
 assert_eq!(2+2, 4);
 }".to_string();
-        let output = make_test(input, Some("asdf"), false, &opts);
+        let output = make_test(input, Some("asdf"), false, &opts, DEFAULT_EDITION);
         assert_eq!(output, (expected, 3));
     }
 
@@ -938,7 +941,7 @@ fn main() {
 use asdf::qwop;
 assert_eq!(2+2, 4);
 }".to_string();
-        let output = make_test(input, Some("asdf"), false, &opts);
+        let output = make_test(input, Some("asdf"), false, &opts, DEFAULT_EDITION);
         assert_eq!(output, (expected, 2));
     }
 
@@ -957,7 +960,7 @@ fn main() {
 use std::*;
 assert_eq!(2+2, 4);
 }".to_string();
-        let output = make_test(input, Some("std"), false, &opts);
+        let output = make_test(input, Some("std"), false, &opts, DEFAULT_EDITION);
         assert_eq!(output, (expected, 2));
     }
 
@@ -977,7 +980,7 @@ fn main() {
 use asdf::qwop;
 assert_eq!(2+2, 4);
 }".to_string();
-        let output = make_test(input, Some("asdf"), false, &opts);
+        let output = make_test(input, Some("asdf"), false, &opts, DEFAULT_EDITION);
         assert_eq!(output, (expected, 2));
     }
 
@@ -995,7 +998,7 @@ fn main() {
 use asdf::qwop;
 assert_eq!(2+2, 4);
 }".to_string();
-        let output = make_test(input, Some("asdf"), false, &opts);
+        let output = make_test(input, Some("asdf"), false, &opts, DEFAULT_EDITION);
         assert_eq!(output, (expected, 2));
     }
 
@@ -1015,7 +1018,7 @@ fn main() {
 use asdf::qwop;
 assert_eq!(2+2, 4);
 }".to_string();
-        let output = make_test(input, Some("asdf"), false, &opts);
+        let output = make_test(input, Some("asdf"), false, &opts, DEFAULT_EDITION);
         assert_eq!(output, (expected, 3));
 
         // Adding more will also bump the returned line offset.
@@ -1028,7 +1031,7 @@ fn main() {
 use asdf::qwop;
 assert_eq!(2+2, 4);
 }".to_string();
-        let output = make_test(input, Some("asdf"), false, &opts);
+        let output = make_test(input, Some("asdf"), false, &opts, DEFAULT_EDITION);
         assert_eq!(output, (expected, 4));
     }
 
@@ -1046,7 +1049,7 @@ assert_eq!(2+2, 4);";
 fn main() {
 assert_eq!(2+2, 4);
 }".to_string();
-        let output = make_test(input, None, false, &opts);
+        let output = make_test(input, None, false, &opts, DEFAULT_EDITION);
         assert_eq!(output, (expected, 2));
     }
 
@@ -1063,7 +1066,7 @@ assert_eq!(2+2, 4);
 fn main() {
     assert_eq!(2+2, 4);
 }".to_string();
-        let output = make_test(input, None, false, &opts);
+        let output = make_test(input, None, false, &opts, DEFAULT_EDITION);
         assert_eq!(output, (expected, 1));
     }
 
@@ -1080,7 +1083,7 @@ assert_eq!(2+2, 4);";
 fn main() {
 assert_eq!(2+2, 4);
 }".to_string();
-        let output = make_test(input, None, false, &opts);
+        let output = make_test(input, None, false, &opts, DEFAULT_EDITION);
         assert_eq!(output, (expected, 2));
     }
 
@@ -1095,7 +1098,7 @@ assert_eq!(2+2, 4);";
 "#![allow(unused)]
 //Ceci n'est pas une `fn main`
 assert_eq!(2+2, 4);".to_string();
-        let output = make_test(input, None, true, &opts);
+        let output = make_test(input, None, true, &opts, DEFAULT_EDITION);
         assert_eq!(output, (expected, 1));
     }
 
@@ -1110,7 +1113,7 @@ assert_eq!(2+2, 4);".to_string();
 "fn main() {
 assert_eq!(2+2, 4);
 }".to_string();
-        let output = make_test(input, None, false, &opts);
+        let output = make_test(input, None, false, &opts, DEFAULT_EDITION);
         assert_eq!(output, (expected, 1));
     }
 
@@ -1129,7 +1132,7 @@ fn main() {
 assert_eq!(2+2, 4);
 }".to_string();
 
-        let output = make_test(input, None, false, &opts);
+        let output = make_test(input, None, false, &opts, DEFAULT_EDITION);
         assert_eq!(output, (expected, 2));
 
         let input =
@@ -1144,7 +1147,7 @@ fn main() {
 assert_eq!(asdf::foo, 4);
 }".to_string();
 
-        let output = make_test(input, Some("asdf"), false, &opts);
+        let output = make_test(input, Some("asdf"), false, &opts, DEFAULT_EDITION);
         assert_eq!(output, (expected, 3));
     }
 
@@ -1163,7 +1166,7 @@ test_wrapper! {
     fn main() {}
 }".to_string();
 
-        let output = make_test(input, Some("my_crate"), false, &opts);
+        let output = make_test(input, Some("my_crate"), false, &opts, DEFAULT_EDITION);
         assert_eq!(output, (expected, 1));
     }
 }

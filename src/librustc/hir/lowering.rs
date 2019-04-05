@@ -771,7 +771,7 @@ impl<'a> LoweringContext<'a> {
             allow_internal_unstable,
             allow_internal_unsafe: false,
             local_inner_macros: false,
-            edition: source_map::hygiene::default_edition(),
+            edition: self.sess.edition(),
         });
         span.with_ctxt(SyntaxContext::empty().apply_mark(mark))
     }

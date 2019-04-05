@@ -720,6 +720,7 @@ impl Encodable for InternedString {
 mod tests {
     use super::*;
     use crate::Globals;
+    use crate::edition;
 
     #[test]
     fn interner_tests() {
@@ -742,7 +743,7 @@ mod tests {
 
     #[test]
     fn without_first_quote_test() {
-        GLOBALS.set(&Globals::new(), || {
+        GLOBALS.set(&Globals::new(edition::DEFAULT_EDITION), || {
             let i = Ident::from_str("'break");
             assert_eq!(i.without_first_quote().name, keywords::Break.name());
         });

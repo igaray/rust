@@ -1,5 +1,6 @@
 use std::fmt;
 use std::str::FromStr;
+use crate::GLOBALS;
 
 /// The edition of the compiler (RFC 2052)
 #[derive(Clone, Copy, Hash, PartialEq, PartialOrd, Debug, RustcEncodable, RustcDecodable, Eq)]
@@ -37,6 +38,16 @@ impl fmt::Display for Edition {
 }
 
 impl Edition {
+    pub fn from_session() -> Edition {
+        GLOBALS.with(|globals| globals.edition.load())
+    }
+
+    // FIXME: Fix rustdoc's global usage and remove this function
+    // and make the `edition` field immutable.
+    pub fn set_session_edition(edition: Edition) {
+        GLOBALS.with(|globals| globals.edition.store(edition))
+    }
+
     pub fn lint_name(&self) -> &'static str {
         match *self {
             Edition::Edition2015 => "rust_2015_compatibility",

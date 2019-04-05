@@ -27,7 +27,7 @@ use std::fmt::{self, Write};
 use std::borrow::Cow;
 use std::ops::Range;
 use std::str;
-use syntax::edition::Edition;
+use syntax::edition::{DEFAULT_EDITION, Edition};
 
 use crate::html::toc::TocBuilder;
 use crate::html::highlight;
@@ -198,8 +198,13 @@ impl<'a, I: Iterator<Item = Event<'a>>> Iterator for CodeBlocks<'a, I> {
                     .map(|l| map_line(l).for_code())
                     .collect::<Vec<Cow<'_, str>>>().join("\n");
                 let krate = krate.as_ref().map(|s| &**s);
-                let (test, _) = test::make_test(&test, krate, false,
-                                           &Default::default());
+                let (test, _) = test::make_test(
+                    &test,
+                    krate,
+                    false,
+                    &Default::default(),
+                    edition.unwrap_or(DEFAULT_EDITION),
+                );
                 let channel = if test.contains("#![feature(") {
                     "&amp;version=nightly"
                 } else {
