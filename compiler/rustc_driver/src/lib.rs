@@ -188,6 +188,11 @@ fn run_compiler(
         Box<dyn FnOnce(&config::Options) -> Box<dyn CodegenBackend> + Send>,
     >,
 ) -> interface::Result<()> {
+
+    let rustc_dev_guide_span = span!(target: "rustc_dev_guide", tracing::Level::TRACE, "rustc_dev_guide_span");
+    let _rustc_dev_guide_guard = rustc_dev_guide_span.enter();
+    trace!(target: "rustc_dev_guide", "run_compiler");
+
     let mut args = Vec::new();
     for arg in at_args {
         match args::arg_expand(arg.clone()) {
@@ -488,6 +493,7 @@ pub fn set_sigpipe_handler() {}
 
 // Extract output directory and file from matches.
 fn make_output(matches: &getopts::Matches) -> (Option<PathBuf>, Option<PathBuf>) {
+    trace!(target: "rustc_dev_guide", "make_output");
     let odir = matches.opt_str("out-dir").map(|o| PathBuf::from(&o));
     let ofile = matches.opt_str("o").map(|o| PathBuf::from(&o));
     (odir, ofile)
